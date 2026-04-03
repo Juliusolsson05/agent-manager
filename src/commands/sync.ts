@@ -1,67 +1,95 @@
 import { join } from "path";
 import chalk from "chalk";
-import { findProjectRoot, getCommandsDir, GLOBAL_COMMANDS_DIR } from "../lib/paths.js";
+import { findProjectRoot, getCommandsDir, GLOBAL_COMMANDS_DIR, getProfileCommandsDir } from "../lib/paths.js";
 import { loadConfig } from "../lib/config.js";
 import { getAdapters } from "../adapters/index.js";
 import { listMarkdownFiles, syncFile } from "../lib/fs-utils.js";
 import type { SyncResult } from "../adapters/types.js";
 
-export function syncCommand(options: { global?: boolean }): void {
-  const scope = options.global ? "global" : "project";
+interface CommandSource {
+  file: string;
+  sourcePath: string;
+  scope: "project" | "profile" | "global";
+}
 
-  let projectRoot: string;
-  let commandsDir: string;
+function collectCommands(projectRoot: string | null): CommandSource[] {
+  const seen = new Map<string, CommandSource>();
 
-  if (scope === "global") {
-    projectRoot = "";
-    commandsDir = GLOBAL_COMMANDS_DIR;
-  } else {
-    const root = findProjectRoot();
-    if (!root) {
-      console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
-      return;
-    }
-    projectRoot = root;
-    commandsDir = getCommandsDir("project", root);
+  // Global commands (lowest priority)
+  const globalConfig = loadConfig("global");
+  const globalFiles = listMarkdownFiles(GLOBAL_COMMANDS_DIR);
+  for (const file of globalFiles) {
+    seen.set(file, { file, sourcePath: join(GLOBAL_COMMANDS_DIR, file), scope: "global" });
   }
 
-  const config = loadConfig(scope, projectRoot || undefined);
+  // Profile commands (medium priority)
+  if (globalConfig.activeProfile) {
+    const profileDir = getProfileCommandsDir(globalConfig.activeProfile);
+    const profileFiles = listMarkdownFiles(profileDir);
+    for (const file of profileFiles) {
+      seen.set(file, { file, sourcePath: join(profileDir, file), scope: "profile" });
+    }
+  }
+
+  // Project commands (highest priority)
+  if (projectRoot) {
+    const projectDir = getCommandsDir("project", projectRoot);
+    const projectFiles = listMarkdownFiles(projectDir);
+    for (const file of projectFiles) {
+      seen.set(file, { file, sourcePath: join(projectDir, file), scope: "project" });
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+export function syncCommand(options: { global?: boolean }): void {
+  if (options.global) {
+    syncSingleScope("global", "", GLOBAL_COMMANDS_DIR);
+    return;
+  }
+
+  const root = findProjectRoot();
+  if (!root) {
+    console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
+    return;
+  }
+
+  const config = loadConfig("project", root);
   if (config.targets.length === 0) {
     console.log(chalk.red("No targets configured. Run `agent-commands init` first."));
     return;
   }
 
-  const files = listMarkdownFiles(commandsDir);
-  if (files.length === 0) {
+  const commands = collectCommands(root);
+  if (commands.length === 0) {
     console.log(chalk.yellow("No commands found. Add some with: agent-commands add <name>"));
     return;
   }
 
   const targetAdapters = getAdapters(config.targets);
-  const results: SyncResult[] = [];
+  const results: (SyncResult & { scope: string })[] = [];
 
-  for (const file of files) {
-    const sourcePath = join(commandsDir, file);
-
+  for (const cmd of commands) {
     for (const adapter of targetAdapters) {
       if (!adapter.supportsCommands) {
-        results.push({ target: adapter.name, command: file, status: "skipped", reason: "no command support" });
+        results.push({ target: adapter.name, command: cmd.file, status: "skipped", reason: "no command support", scope: cmd.scope });
         continue;
       }
 
-      const targetDir = adapter.getCommandsDir(scope, projectRoot);
+      const targetDir = adapter.getCommandsDir("project", root);
       if (!targetDir) {
-        results.push({ target: adapter.name, command: file, status: "skipped", reason: "no directory for scope" });
+        results.push({ target: adapter.name, command: cmd.file, status: "skipped", reason: "no directory for scope", scope: cmd.scope });
         continue;
       }
 
       try {
-        const destPath = join(targetDir, file);
-        syncFile(sourcePath, destPath);
-        results.push({ target: adapter.name, command: file, status: "synced" });
+        const destPath = join(targetDir, cmd.file);
+        syncFile(cmd.sourcePath, destPath);
+        results.push({ target: adapter.name, command: cmd.file, status: "synced", scope: cmd.scope });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        results.push({ target: adapter.name, command: file, status: "failed", reason: msg });
+        results.push({ target: adapter.name, command: cmd.file, status: "failed", reason: msg, scope: cmd.scope });
       }
     }
   }
@@ -72,7 +100,8 @@ export function syncCommand(options: { global?: boolean }): void {
 
   for (const r of results) {
     if (r.status === "synced") {
-      console.log(chalk.green(`✓ ${r.command} → ${r.target}`));
+      const scopeTag = chalk.dim(`[${r.scope}]`);
+      console.log(chalk.green(`✓ ${r.command} → ${r.target} ${scopeTag}`));
       synced++;
     } else if (r.status === "skipped") {
       skipped++;
@@ -86,4 +115,40 @@ export function syncCommand(options: { global?: boolean }): void {
   console.log(`Synced ${chalk.green(String(synced))} command(s) to ${targetAdapters.filter(a => a.supportsCommands).length} target(s)`);
   if (skipped > 0) console.log(chalk.dim(`Skipped ${skipped} (no command support)`));
   if (failed > 0) console.log(chalk.red(`Failed: ${failed}`));
+}
+
+function syncSingleScope(scope: "project" | "global", projectRoot: string, commandsDir: string): void {
+  const config = loadConfig(scope, projectRoot || undefined);
+  if (config.targets.length === 0) {
+    console.log(chalk.red("No targets configured."));
+    return;
+  }
+
+  const files = listMarkdownFiles(commandsDir);
+  if (files.length === 0) {
+    console.log(chalk.yellow("No commands found."));
+    return;
+  }
+
+  const targetAdapters = getAdapters(config.targets);
+  let synced = 0;
+
+  for (const file of files) {
+    const sourcePath = join(commandsDir, file);
+    for (const adapter of targetAdapters) {
+      if (!adapter.supportsCommands) continue;
+      const targetDir = adapter.getCommandsDir(scope, projectRoot);
+      if (!targetDir) continue;
+      try {
+        syncFile(sourcePath, join(targetDir, file));
+        console.log(chalk.green(`✓ ${file} → ${adapter.name}`));
+        synced++;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.log(chalk.red(`✗ ${file} → ${adapter.name}: ${msg}`));
+      }
+    }
+  }
+
+  console.log(`\nSynced ${chalk.green(String(synced))} command(s)`);
 }
