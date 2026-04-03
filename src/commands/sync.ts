@@ -1,9 +1,10 @@
 import { join } from "path";
+import { readFileSync } from "fs";
 import chalk from "chalk";
 import { findProjectRoot, getCommandsDir, GLOBAL_COMMANDS_DIR, getProfileCommandsDir } from "../lib/paths.js";
 import { loadConfig } from "../lib/config.js";
 import { getAdapters } from "../adapters/index.js";
-import { listMarkdownFiles, syncFile } from "../lib/fs-utils.js";
+import { listMarkdownFiles, syncFile, parseFrontmatter } from "../lib/fs-utils.js";
 import type { SyncResult } from "../adapters/types.js";
 
 interface CommandSource {
@@ -43,7 +44,7 @@ function collectCommands(projectRoot: string | null): CommandSource[] {
   return Array.from(seen.values());
 }
 
-export function syncCommand(options: { global?: boolean }): void {
+export async function syncCommand(options: { global?: boolean }): Promise<void> {
   if (options.global) {
     syncSingleScope("global", "", GLOBAL_COMMANDS_DIR);
     return;
@@ -77,16 +78,23 @@ export function syncCommand(options: { global?: boolean }): void {
         continue;
       }
 
-      const targetDir = adapter.getCommandsDir("project", root);
-      if (!targetDir) {
-        results.push({ target: adapter.name, command: cmd.file, status: "skipped", reason: "no directory for scope", scope: cmd.scope });
-        continue;
-      }
-
       try {
-        const destPath = join(targetDir, cmd.file);
-        syncFile(cmd.sourcePath, destPath);
-        results.push({ target: adapter.name, command: cmd.file, status: "synced", scope: cmd.scope });
+        if (adapter.syncCommand) {
+          const raw = readFileSync(cmd.sourcePath, "utf-8");
+          const { description, body } = parseFrontmatter(raw);
+          const cmdName = cmd.file.replace(/\.md$/, "");
+          await adapter.syncCommand(cmdName, description, body, "project", root);
+          results.push({ target: adapter.name, command: cmd.file, status: "synced", scope: cmd.scope });
+        } else {
+          const targetDir = adapter.getCommandsDir("project", root);
+          if (!targetDir) {
+            results.push({ target: adapter.name, command: cmd.file, status: "skipped", reason: "no directory for scope", scope: cmd.scope });
+            continue;
+          }
+          const destPath = join(targetDir, cmd.file);
+          syncFile(cmd.sourcePath, destPath);
+          results.push({ target: adapter.name, command: cmd.file, status: "synced", scope: cmd.scope });
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         results.push({ target: adapter.name, command: cmd.file, status: "failed", reason: msg, scope: cmd.scope });
@@ -117,7 +125,7 @@ export function syncCommand(options: { global?: boolean }): void {
   if (failed > 0) console.log(chalk.red(`Failed: ${failed}`));
 }
 
-function syncSingleScope(scope: "project" | "global", projectRoot: string, commandsDir: string): void {
+async function syncSingleScope(scope: "project" | "global", projectRoot: string, commandsDir: string): Promise<void> {
   const config = loadConfig(scope, projectRoot || undefined);
   if (config.targets.length === 0) {
     console.log(chalk.red("No targets configured."));
@@ -137,10 +145,17 @@ function syncSingleScope(scope: "project" | "global", projectRoot: string, comma
     const sourcePath = join(commandsDir, file);
     for (const adapter of targetAdapters) {
       if (!adapter.supportsCommands) continue;
-      const targetDir = adapter.getCommandsDir(scope, projectRoot);
-      if (!targetDir) continue;
       try {
-        syncFile(sourcePath, join(targetDir, file));
+        if (adapter.syncCommand) {
+          const raw = readFileSync(sourcePath, "utf-8");
+          const { description, body } = parseFrontmatter(raw);
+          const cmdName = file.replace(/\.md$/, "");
+          await adapter.syncCommand(cmdName, description, body, scope, projectRoot);
+        } else {
+          const targetDir = adapter.getCommandsDir(scope, projectRoot);
+          if (!targetDir) continue;
+          syncFile(sourcePath, join(targetDir, file));
+        }
         console.log(chalk.green(`✓ ${file} → ${adapter.name}`));
         synced++;
       } catch (err) {
