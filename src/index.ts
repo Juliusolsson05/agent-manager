@@ -9,6 +9,7 @@ import { mcpRemoveCommand } from "./commands/mcp-remove.js";
 import { mcpListCommand } from "./commands/mcp-list.js";
 import { hookInstallCommand, hookRemoveCommand } from "./commands/hook.js";
 import { helpAgentCommand } from "./commands/help-agent.js";
+import { helpCommand } from "./commands/help-rich.js";
 import { profileCreateCommand, profileSwitchCommand, profileListCommand, profileDeleteCommand } from "./commands/profile.js";
 import { syncRepoCommand, syncRepoUpdateCommand, syncRepoListCommand, syncRepoRemoveCommand } from "./commands/sync-repo.js";
 
@@ -144,5 +145,10 @@ syncRepo
   .command("remove <url>")
   .description("Stop tracking a repo and remove cached clone")
   .action(syncRepoRemoveCommand);
+
+program
+  .command("help")
+  .description("Show detailed help with examples")
+  .action(helpCommand);
 
 program.parse();
