@@ -7,6 +7,9 @@
     "agent-commands": "./dist/index.js",
     "ac": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
