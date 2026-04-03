@@ -72,8 +72,8 @@ export function listCommand(options: { global?: boolean }): void {
     const statuses: string[] = [];
 
     for (const adapter of targetAdapters) {
-      const scope = cmd.scope === "project" ? "project" : "global";
-      const dir = adapter.getCommandsDir(scope, projectRoot ?? "");
+      // All commands (regardless of source scope) are synced into project target dirs
+      const dir = adapter.getCommandsDir(options.global ? "global" : "project", projectRoot ?? "");
       if (!dir) {
         statuses.push(chalk.dim(`${adapter.id} —`));
         continue;
