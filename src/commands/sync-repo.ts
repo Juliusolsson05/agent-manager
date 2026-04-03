@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, dirname } from "path";
 import { existsSync, copyFileSync, rmSync } from "fs";
 import { execSync } from "child_process";
 import chalk from "chalk";
@@ -7,11 +7,11 @@ import { ensureDir, listMarkdownFiles } from "../lib/fs-utils.js";
 import { GLOBAL_REPOS_DIR, GLOBAL_COMMANDS_DIR, getProfileCommandsDir } from "../lib/paths.js";
 
 function parseRepoUrl(url: string): { owner: string; name: string; cloneUrl: string } | null {
-  const match = url.match(/(?:https?:\/\/)?(?:github\.com\/)?([^\/]+)\/([^\/\s.]+?)(?:\.git)?$/);
+  const match = url.match(/^(?:https?:\/\/)?(?:github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+?)(?:\.git)?$/);
   if (!match) return null;
   const owner = match[1];
   const name = match[2];
-  const cloneUrl = `https://github.com/${owner}/${name}.git`;
+  const cloneUrl = `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(name)}.git`;
   return { owner, name, cloneUrl };
 }
 
@@ -79,6 +79,7 @@ export function syncRepoCommand(url: string, options: { profile?: string }): voi
   for (const file of files) {
     const src = join(repoCommandsDir, file);
     const dest = join(destDir, file);
+    ensureDir(dirname(dest));
     copyFileSync(src, dest);
     console.log(chalk.green(`✓ ${file}`));
     copied++;
