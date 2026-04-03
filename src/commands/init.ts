@@ -1,7 +1,7 @@
 import { join } from "path";
 import { existsSync, appendFileSync, readFileSync } from "fs";
 import chalk from "chalk";
-import { checkbox } from "@inquirer/prompts";
+import { checkbox, confirm } from "@inquirer/prompts";
 import { saveConfig } from "../lib/config.js";
 import { ensureDir } from "../lib/fs-utils.js";
 import {
@@ -26,7 +26,7 @@ export async function initCommand(options: { global?: boolean }): Promise<void> 
   }
 
   const targets = await checkbox({
-    message: "Which tools do you use?",
+    message: "What platforms do you want to sync?",
     choices: [
       { name: "Claude Code", value: "claude-code" },
       { name: "Cursor", value: "cursor" },
@@ -53,28 +53,35 @@ export async function initCommand(options: { global?: boolean }): Promise<void> 
     console.log(chalk.green(`✓ Created ${PROJECT_CONFIG_FILE}`));
     console.log(chalk.green(`✓ Created ${PROJECT_COMMANDS_DIR}/`));
 
-    const excludePath = join(cwd, ".git", "info", "exclude");
     if (existsSync(join(cwd, ".git"))) {
-      const excludeContent = existsSync(excludePath) ? readFileSync(excludePath, "utf-8") : "";
-      const linesToAdd: string[] = [];
+      const shouldGitignore = await confirm({
+        message: "Gitignore the generated platform command directories?",
+        default: true,
+      });
 
-      for (const target of targets) {
-        const dirs: Record<string, string> = {
-          "claude-code": ".claude/commands/",
-          cursor: ".cursor/prompts/",
-          codex: ".codex/",
-          opencode: "",
-        };
-        const dir = dirs[target];
-        if (dir && !excludeContent.includes(dir)) {
-          linesToAdd.push(dir);
+      if (shouldGitignore) {
+        const excludePath = join(cwd, ".git", "info", "exclude");
+        const excludeContent = existsSync(excludePath) ? readFileSync(excludePath, "utf-8") : "";
+        const linesToAdd: string[] = [];
+
+        for (const target of targets) {
+          const dirs: Record<string, string> = {
+            "claude-code": ".claude/commands/",
+            cursor: ".cursor/prompts/",
+            codex: ".codex/",
+            opencode: "",
+          };
+          const dir = dirs[target];
+          if (dir && !excludeContent.includes(dir)) {
+            linesToAdd.push(dir);
+          }
         }
-      }
 
-      if (linesToAdd.length > 0) {
-        const addition = "\n# agent-commands generated dirs\n" + linesToAdd.join("\n") + "\n";
-        appendFileSync(excludePath, addition);
-        console.log(chalk.green("✓ Added generated dirs to .git/info/exclude"));
+        if (linesToAdd.length > 0) {
+          const addition = "\n# agent-commands generated dirs\n" + linesToAdd.join("\n") + "\n";
+          appendFileSync(excludePath, addition);
+          console.log(chalk.green("✓ Added generated dirs to .git/info/exclude"));
+        }
       }
     }
   }
