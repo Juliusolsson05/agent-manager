@@ -36,4 +36,8 @@ export interface Adapter {
   writeMcpConfig(servers: Record<string, McpServer>, scope: "project" | "global", projectRoot: string): Promise<void>;
   /** For adapters that sync commands via config (not files). Called instead of symlinking. */
   syncCommand?(name: string, description: string, body: string, scope: "project" | "global", projectRoot: string): Promise<void>;
+  /** Remove a command from this adapter's config. For config-based adapters. */
+  removeCommand?(name: string, scope: "project" | "global", projectRoot: string): Promise<boolean>;
+  /** List command names currently configured in this adapter. For config-based adapters. */
+  listCommands?(scope: "project" | "global", projectRoot: string): Promise<string[]>;
 }
