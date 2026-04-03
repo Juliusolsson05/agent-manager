@@ -10,6 +10,7 @@ import { mcpListCommand } from "./commands/mcp-list.js";
 import { hookInstallCommand, hookRemoveCommand } from "./commands/hook.js";
 import { helpAgentCommand } from "./commands/help-agent.js";
 import { profileCreateCommand, profileSwitchCommand, profileListCommand, profileDeleteCommand } from "./commands/profile.js";
+import { syncRepoCommand, syncRepoUpdateCommand, syncRepoListCommand, syncRepoRemoveCommand } from "./commands/sync-repo.js";
 
 program
   .name("agent-commands")
@@ -118,5 +119,30 @@ profile
   .command("delete <name>")
   .description("Delete a profile")
   .action(profileDeleteCommand);
+
+const syncRepo = program
+  .command("sync-repo")
+  .description("Import commands from a GitHub repo");
+
+syncRepo
+  .command("add <url>")
+  .description("Clone a repo and import its commands")
+  .option("-p, --profile <name>", "Import into a specific profile")
+  .action(syncRepoCommand);
+
+syncRepo
+  .command("update")
+  .description("Pull latest from all tracked repos")
+  .action(syncRepoUpdateCommand);
+
+syncRepo
+  .command("list")
+  .description("List tracked repos")
+  .action(syncRepoListCommand);
+
+syncRepo
+  .command("remove <url>")
+  .description("Stop tracking a repo and remove cached clone")
+  .action(syncRepoRemoveCommand);
 
 program.parse();
