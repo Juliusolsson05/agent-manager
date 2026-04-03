@@ -9,6 +9,7 @@ import { mcpRemoveCommand } from "./commands/mcp-remove.js";
 import { mcpListCommand } from "./commands/mcp-list.js";
 import { hookInstallCommand, hookRemoveCommand } from "./commands/hook.js";
 import { helpAgentCommand } from "./commands/help-agent.js";
+import { profileCreateCommand, profileSwitchCommand, profileListCommand, profileDeleteCommand } from "./commands/profile.js";
 
 program
   .name("agent-commands")
@@ -93,5 +94,29 @@ program
   .command("help-agent")
   .description("Output a full reference for AI agents to understand this tool")
   .action(helpAgentCommand);
+
+const profile = program
+  .command("profile")
+  .description("Manage command profiles");
+
+profile
+  .command("create <name>")
+  .description("Create a new profile")
+  .action(profileCreateCommand);
+
+profile
+  .command("switch <name>")
+  .description("Switch to a profile")
+  .action(profileSwitchCommand);
+
+profile
+  .command("list")
+  .description("List all profiles")
+  .action(profileListCommand);
+
+profile
+  .command("delete <name>")
+  .description("Delete a profile")
+  .action(profileDeleteCommand);
 
 program.parse();
