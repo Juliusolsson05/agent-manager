@@ -112,4 +112,8 @@ export async function initCommand(options: InitOptions): Promise<void> {
 
   console.log(chalk.dim("\nAdd commands with: agent-commands add <name>"));
   console.log(chalk.dim("Sync with: agent-commands sync"));
+  console.log("");
+  console.log(chalk.bold("Tip:") + " This tool works best when your AI agent knows about it.");
+  console.log(chalk.dim("Run `ac help-agent` and paste the output to your agent, or ask it to run:"));
+  console.log(chalk.cyan("  ac help-agent"));
 }

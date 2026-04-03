@@ -8,6 +8,7 @@ import { mcpAddCommand } from "./commands/mcp-add.js";
 import { mcpRemoveCommand } from "./commands/mcp-remove.js";
 import { mcpListCommand } from "./commands/mcp-list.js";
 import { hookInstallCommand, hookRemoveCommand } from "./commands/hook.js";
+import { helpAgentCommand } from "./commands/help-agent.js";
 
 program
   .name("agent-commands")
@@ -87,5 +88,10 @@ hook
   .command("remove")
   .description("Remove agent-commands git hooks")
   .action(hookRemoveCommand);
+
+program
+  .command("help-agent")
+  .description("Output a full reference for AI agents to understand this tool")
+  .action(helpAgentCommand);
 
 program.parse();
