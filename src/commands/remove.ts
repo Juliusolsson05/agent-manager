@@ -5,7 +5,7 @@ import { removeFile } from "../lib/fs-utils.js";
 import { loadConfig } from "../lib/config.js";
 import { getAdapters } from "../adapters/index.js";
 
-export function removeCommand(name: string, options: { global?: boolean }): void {
+export async function removeCommand(name: string, options: { global?: boolean }): Promise<void> {
   const scope = options.global ? "global" : "project";
   const cleanName = name.replace(/\.md$/, "");
 
@@ -25,6 +25,7 @@ export function removeCommand(name: string, options: { global?: boolean }): void
     commandsDir = getCommandsDir("project", root);
   }
 
+  // Remove source file
   const sourcePath = join(commandsDir, `${cleanName}.md`);
   const removed = removeFile(sourcePath);
   if (!removed) {
@@ -33,16 +34,27 @@ export function removeCommand(name: string, options: { global?: boolean }): void
   }
   console.log(chalk.green(`✓ Removed ${sourcePath}`));
 
-  if (scope === "project" && projectRoot) {
-    const config = loadConfig("project", projectRoot);
-    const targetAdapters = getAdapters(config.targets);
-    for (const adapter of targetAdapters) {
-      if (!adapter.supportsCommands) continue;
-      const dir = adapter.getCommandsDir(scope, projectRoot);
-      if (!dir) continue;
+  // Remove from all target adapters
+  const config = loadConfig(scope === "global" ? "global" : "project", projectRoot || undefined);
+  const targetAdapters = getAdapters(config.targets);
+
+  for (const adapter of targetAdapters) {
+    if (!adapter.supportsCommands) continue;
+
+    // File-based removal
+    const dir = adapter.getCommandsDir(scope, projectRoot);
+    if (dir) {
       const targetPath = join(dir, `${cleanName}.md`);
       if (removeFile(targetPath)) {
         console.log(chalk.green(`✓ Removed from ${adapter.name}`));
+      }
+    }
+
+    // Config-based removal
+    if (adapter.removeCommand) {
+      const didRemove = await adapter.removeCommand(cleanName, scope, projectRoot);
+      if (didRemove) {
+        console.log(chalk.green(`✓ Removed from ${adapter.name} config`));
       }
     }
   }
