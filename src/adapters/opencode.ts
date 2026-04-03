@@ -6,9 +6,11 @@ import { readJson, writeJson } from "../lib/fs-utils.js";
 export const opencodeAdapter: Adapter = {
   name: "OpenCode",
   id: "opencode",
-  supportsCommands: false,
+  supportsCommands: true,
 
   getCommandsDir() {
+    // OpenCode doesn't use a file-based commands directory
+    // Commands are synced via syncCommand() into the JSON config
     return null;
   },
 
@@ -30,6 +32,15 @@ export const opencodeAdapter: Adapter = {
       ...(existing.mcpServers as Record<string, unknown> ?? {}),
       ...servers,
     };
+    writeJson(path, existing);
+  },
+
+  async syncCommand(name, description, body, scope, projectRoot) {
+    const path = this.getMcpConfigPath(scope, projectRoot);
+    const existing = readJson(path);
+    const commands = (existing.commands ?? {}) as Record<string, { description: string; prompt: string }>;
+    commands[name] = { description: description || `${name} command`, prompt: body };
+    existing.commands = commands;
     writeJson(path, existing);
   },
 };
