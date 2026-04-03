@@ -14,13 +14,13 @@ export function profileCreateCommand(name: string): void {
   ensureDir(getProfileCommandsDir(name));
   console.log(chalk.green(`✓ Created profile "${name}"`));
   console.log(chalk.dim(`  Commands dir: ${getProfileCommandsDir(name)}`));
-  console.log(chalk.dim(`  Switch to it: ac profile switch ${name}`));
+  console.log(chalk.dim(`  Switch to it: amgr profile switch ${name}`));
 }
 
 export function profileSwitchCommand(name: string): void {
   const profileDir = getProfileDir(name);
   if (!existsSync(profileDir)) {
-    console.log(chalk.red(`Profile "${name}" does not exist. Create it first: ac profile create ${name}`));
+    console.log(chalk.red(`Profile "${name}" does not exist. Create it first: amgr profile create ${name}`));
     return;
   }
 
@@ -28,7 +28,7 @@ export function profileSwitchCommand(name: string): void {
   config.activeProfile = name;
   saveConfig(config, "global");
   console.log(chalk.green(`✓ Switched to profile "${name}"`));
-  console.log(chalk.dim("Run `ac sync` to apply."));
+  console.log(chalk.dim("Run `amgr sync` to apply."));
 }
 
 export function profileListCommand(): void {

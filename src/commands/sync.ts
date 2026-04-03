@@ -51,19 +51,19 @@ export function syncCommand(options: { global?: boolean }): void {
 
   const root = findProjectRoot();
   if (!root) {
-    console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
+    console.log(chalk.red("Not in an agent-mgr project. Run `agent-mgr init` first."));
     return;
   }
 
   const config = loadConfig("project", root);
   if (config.targets.length === 0) {
-    console.log(chalk.red("No targets configured. Run `agent-commands init` first."));
+    console.log(chalk.red("No targets configured. Run `agent-mgr init` first."));
     return;
   }
 
   const commands = collectCommands(root);
   if (commands.length === 0) {
-    console.log(chalk.yellow("No commands found. Add some with: agent-commands add <name>"));
+    console.log(chalk.yellow("No commands found. Add some with: amgr add <name>"));
     return;
   }
 

@@ -1,11 +1,11 @@
 {
-  "name": "agent-commands",
+  "name": "agent-mgr",
   "version": "0.1.0",
   "description": "Write commands once, sync everywhere. Universal CLI for managing AI agent commands, prompts, and MCP configs.",
   "type": "module",
   "bin": {
-    "agent-commands": "./dist/index.js",
-    "ac": "./dist/index.js"
+    "agent-mgr": "./dist/index.js",
+    "amgr": "./dist/index.js"
   },
   "files": [
     "dist"
@@ -31,7 +31,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Juliusolsson05/agent-commands.git"
+    "url": "https://github.com/Juliusolsson05/agent-manager.git"
   },
   "dependencies": {
     "@inquirer/prompts": "^8.3.2",

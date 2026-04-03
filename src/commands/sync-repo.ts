@@ -92,13 +92,13 @@ export function syncRepoCommand(url: string, options: { profile?: string }): voi
 
   console.log("");
   console.log(`Imported ${chalk.green(String(copied))} command(s) from ${owner}/${name}`);
-  console.log(chalk.dim("Run `ac sync` to distribute to your platforms."));
+  console.log(chalk.dim("Run `amgr sync` to distribute to your platforms."));
 }
 
 export function syncRepoUpdateCommand(): void {
   const config = loadConfig("global");
   if (!config.repos || config.repos.length === 0) {
-    console.log(chalk.yellow("No tracked repos. Add one with: ac sync-repo add <url>"));
+    console.log(chalk.yellow("No tracked repos. Add one with: amgr sync-repo add <url>"));
     return;
   }
 

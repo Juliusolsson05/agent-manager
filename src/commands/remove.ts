@@ -18,7 +18,7 @@ export function removeCommand(name: string, options: { global?: boolean }): void
   } else {
     const root = findProjectRoot();
     if (!root) {
-      console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
+      console.log(chalk.red("Not in an agent-mgr project. Run `agent-mgr init` first."));
       return;
     }
     projectRoot = root;

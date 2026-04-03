@@ -47,7 +47,7 @@ export function listCommand(options: { global?: boolean }): void {
   if (!options.global) {
     projectRoot = findProjectRoot();
     if (!projectRoot) {
-      console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
+      console.log(chalk.red("Not in an agent-mgr project. Run `agent-mgr init` first."));
       return;
     }
   }

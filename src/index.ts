@@ -14,7 +14,7 @@ import { profileCreateCommand, profileSwitchCommand, profileListCommand, profile
 import { syncRepoCommand, syncRepoUpdateCommand, syncRepoListCommand, syncRepoRemoveCommand } from "./commands/sync-repo.js";
 
 program
-  .name("agent-commands")
+  .name("agent-mgr")
   .description(
     "Write commands once, sync everywhere. Manage AI agent commands, prompts, and MCP configs."
   )
@@ -22,8 +22,8 @@ program
 
 program
   .command("init")
-  .description("Initialize agent-commands in this repo or globally")
-  .option("-g, --global", "Initialize global config at ~/.agent-commands/")
+  .description("Initialize agent-mgr in this repo or globally")
+  .option("-g, --global", "Initialize global config at ~/.agent-mgr/")
   .option("-t, --targets <targets>", "Comma-separated list of targets (claude-code,cursor,codex,opencode)")
   .option("-a, --all", "Select all available targets")
   .option("--gitignore", "Add generated dirs to .git/info/exclude")
@@ -89,7 +89,7 @@ hook
 
 hook
   .command("remove")
-  .description("Remove agent-commands git hooks")
+  .description("Remove agent-mgr git hooks")
   .action(hookRemoveCommand);
 
 program

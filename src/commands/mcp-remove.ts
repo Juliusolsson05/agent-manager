@@ -11,7 +11,7 @@ export async function mcpRemoveCommand(name: string, options: { global?: boolean
   if (scope === "project") {
     const root = findProjectRoot();
     if (!root) {
-      console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
+      console.log(chalk.red("Not in an agent-mgr project. Run `agent-mgr init` first."));
       return;
     }
     projectRoot = root;

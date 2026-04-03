@@ -2,13 +2,13 @@ import { homedir } from "os";
 import { join, resolve } from "path";
 import { existsSync } from "fs";
 
-export const GLOBAL_DIR = join(homedir(), ".agent-commands");
+export const GLOBAL_DIR = join(homedir(), ".agent-mgr");
 export const GLOBAL_CONFIG_PATH = join(GLOBAL_DIR, "config.yml");
 export const GLOBAL_COMMANDS_DIR = join(GLOBAL_DIR, "commands");
 export const GLOBAL_MCP_PATH = join(GLOBAL_DIR, "mcp.json");
 
-export const PROJECT_CONFIG_FILE = ".agent-commands.yml";
-export const PROJECT_MCP_FILE = ".agent-commands-mcp.json";
+export const PROJECT_CONFIG_FILE = ".agent-mgr.yml";
+export const PROJECT_MCP_FILE = ".agent-mgr-mcp.json";
 export const PROJECT_COMMANDS_DIR = "commands";
 
 export function findProjectRoot(from: string = process.cwd()): string | null {

@@ -3,9 +3,9 @@ import { existsSync, writeFileSync, readFileSync, chmodSync } from "fs";
 import chalk from "chalk";
 import { ensureDir } from "../lib/fs-utils.js";
 
-const HOOK_MARKER = "# agent-commands auto-sync";
+const HOOK_MARKER = "# agent-mgr auto-sync";
 const HOOK_CONTENT = `${HOOK_MARKER}
-npx agent-commands sync 2>/dev/null || true
+npx agent-mgr sync 2>/dev/null || true
 `;
 
 export function hookInstallCommand(): void {
@@ -57,7 +57,7 @@ export function hookRemoveCommand(): void {
 
     const lines = content.split("\n");
     const filtered = lines.filter(
-      (line) => !line.includes(HOOK_MARKER) && !line.includes("npx agent-commands sync")
+      (line) => !line.includes(HOOK_MARKER) && !line.includes("npx agent-mgr sync")
     );
     const cleaned = filtered.join("\n").trim();
 

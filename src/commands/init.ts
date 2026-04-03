@@ -29,7 +29,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
   }
 
   if (scope === "global" && existsSync(join(GLOBAL_DIR, "config.yml"))) {
-    console.log(chalk.yellow("Global config already exists at ~/.agent-commands/"));
+    console.log(chalk.yellow("Global config already exists at ~/.agent-mgr/"));
     return;
   }
 
@@ -66,8 +66,8 @@ export async function initCommand(options: InitOptions): Promise<void> {
     ensureDir(GLOBAL_DIR);
     ensureDir(GLOBAL_COMMANDS_DIR);
     saveConfig({ targets }, "global");
-    console.log(chalk.green("✓ Created ~/.agent-commands/config.yml"));
-    console.log(chalk.green("✓ Created ~/.agent-commands/commands/"));
+    console.log(chalk.green("✓ Created ~/.agent-mgr/config.yml"));
+    console.log(chalk.green("✓ Created ~/.agent-mgr/commands/"));
   } else {
     const commandsDir = join(cwd, PROJECT_COMMANDS_DIR);
     ensureDir(commandsDir);
@@ -102,7 +102,7 @@ export async function initCommand(options: InitOptions): Promise<void> {
         }
 
         if (linesToAdd.length > 0) {
-          const addition = "\n# agent-commands generated dirs\n" + linesToAdd.join("\n") + "\n";
+          const addition = "\n# agent-mgr generated dirs\n" + linesToAdd.join("\n") + "\n";
           appendFileSync(excludePath, addition);
           console.log(chalk.green("✓ Added generated dirs to .git/info/exclude"));
         }
@@ -110,11 +110,11 @@ export async function initCommand(options: InitOptions): Promise<void> {
     }
   }
 
-  console.log(chalk.dim("\nAdd commands with: agent-commands add <name>"));
-  console.log(chalk.dim("Sync with: agent-commands sync"));
+  console.log(chalk.dim("\nAdd commands with: amgr add <name>"));
+  console.log(chalk.dim("Sync with: amgr sync"));
   console.log("");
   console.log(chalk.bold("Tip:") + " This tool works best when your AI agent helps you configure it.");
-  console.log(chalk.dim("Ask your agent to run `ac help-agent` to learn what it can do, or run:"));
-  console.log(chalk.cyan("  ac help       ") + chalk.dim("— see all commands"));
-  console.log(chalk.cyan("  ac help-agent ") + chalk.dim("— give your AI agent the full reference"));
+  console.log(chalk.dim("Ask your agent to run `amgr help-agent` to learn what it can do, or run:"));
+  console.log(chalk.cyan("  amgr help       ") + chalk.dim("— see all commands"));
+  console.log(chalk.cyan("  amgr help-agent ") + chalk.dim("— give your AI agent the full reference"));
 }
