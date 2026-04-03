@@ -9,8 +9,8 @@ export const cursorAdapter: Adapter = {
   supportsCommands: true,
 
   getCommandsDir(scope, projectRoot) {
-    if (scope === "global") return null;
-    return join(projectRoot, ".cursor", "prompts");
+    if (scope === "global") return join(homedir(), ".cursor", "commands");
+    return join(projectRoot, ".cursor", "commands");
   },
 
   getMcpConfigPath(scope, projectRoot) {
