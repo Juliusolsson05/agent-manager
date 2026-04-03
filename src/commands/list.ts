@@ -2,57 +2,88 @@ import { join } from "path";
 import { existsSync, lstatSync, readlinkSync } from "fs";
 import { resolve, dirname } from "path";
 import chalk from "chalk";
-import { findProjectRoot, getCommandsDir, GLOBAL_COMMANDS_DIR } from "../lib/paths.js";
+import { findProjectRoot, getCommandsDir, GLOBAL_COMMANDS_DIR, getProfileCommandsDir } from "../lib/paths.js";
 import { loadConfig } from "../lib/config.js";
 import { getAdapters } from "../adapters/index.js";
 import { listMarkdownFiles } from "../lib/fs-utils.js";
 
+interface CommandEntry {
+  file: string;
+  sourcePath: string;
+  scope: "project" | "profile" | "global";
+}
+
+function collectAllCommands(projectRoot: string | null): CommandEntry[] {
+  const seen = new Map<string, CommandEntry>();
+
+  const globalFiles = listMarkdownFiles(GLOBAL_COMMANDS_DIR);
+  for (const file of globalFiles) {
+    seen.set(file, { file, sourcePath: join(GLOBAL_COMMANDS_DIR, file), scope: "global" });
+  }
+
+  const globalConfig = loadConfig("global");
+  if (globalConfig.activeProfile) {
+    const profileDir = getProfileCommandsDir(globalConfig.activeProfile);
+    const profileFiles = listMarkdownFiles(profileDir);
+    for (const file of profileFiles) {
+      seen.set(file, { file, sourcePath: join(profileDir, file), scope: "profile" });
+    }
+  }
+
+  if (projectRoot) {
+    const projectDir = getCommandsDir("project", projectRoot);
+    const projectFiles = listMarkdownFiles(projectDir);
+    for (const file of projectFiles) {
+      seen.set(file, { file, sourcePath: join(projectDir, file), scope: "project" });
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
 export function listCommand(options: { global?: boolean }): void {
-  const scope = options.global ? "global" : "project";
+  let projectRoot: string | null = null;
 
-  let projectRoot: string;
-  let commandsDir: string;
-
-  if (scope === "global") {
-    projectRoot = "";
-    commandsDir = GLOBAL_COMMANDS_DIR;
-  } else {
-    const root = findProjectRoot();
-    if (!root) {
+  if (!options.global) {
+    projectRoot = findProjectRoot();
+    if (!projectRoot) {
       console.log(chalk.red("Not in an agent-commands project. Run `agent-commands init` first."));
       return;
     }
-    projectRoot = root;
-    commandsDir = getCommandsDir("project", root);
   }
 
-  const config = loadConfig(scope, projectRoot || undefined);
+  const config = options.global
+    ? loadConfig("global")
+    : loadConfig("project", projectRoot!);
   const targetAdapters = getAdapters(config.targets).filter(a => a.supportsCommands);
-  const files = listMarkdownFiles(commandsDir);
 
-  if (files.length === 0) {
+  const commands = options.global
+    ? listMarkdownFiles(GLOBAL_COMMANDS_DIR).map(f => ({ file: f, sourcePath: join(GLOBAL_COMMANDS_DIR, f), scope: "global" as const }))
+    : collectAllCommands(projectRoot);
+
+  if (commands.length === 0) {
     console.log(chalk.yellow("No commands found."));
     return;
   }
 
   console.log(chalk.bold("\nCommands:\n"));
 
-  for (const file of files) {
-    const sourcePath = join(commandsDir, file);
+  for (const cmd of commands) {
     const statuses: string[] = [];
 
     for (const adapter of targetAdapters) {
-      const dir = adapter.getCommandsDir(scope, projectRoot);
+      const scope = cmd.scope === "project" ? "project" : "global";
+      const dir = adapter.getCommandsDir(scope, projectRoot ?? "");
       if (!dir) {
         statuses.push(chalk.dim(`${adapter.id} —`));
         continue;
       }
-      const targetPath = join(dir, file);
+      const targetPath = join(dir, cmd.file);
       if (existsSync(targetPath)) {
         const isSymlink = lstatSync(targetPath).isSymbolicLink();
         if (isSymlink) {
           const linkTarget = resolve(dirname(targetPath), readlinkSync(targetPath));
-          const inSync = linkTarget === resolve(sourcePath);
+          const inSync = linkTarget === resolve(cmd.sourcePath);
           statuses.push(inSync ? chalk.green(`${adapter.id} ✓`) : chalk.yellow(`${adapter.id} ⚠`));
         } else {
           statuses.push(chalk.yellow(`${adapter.id} ✓ (copy)`));
@@ -62,7 +93,8 @@ export function listCommand(options: { global?: boolean }): void {
       }
     }
 
-    console.log(`  ${file.padEnd(25)} ${statuses.join("  ")}`);
+    const scopeTag = chalk.dim(`[${cmd.scope}]`);
+    console.log(`  ${cmd.file.padEnd(25)} ${scopeTag.padEnd(20)} ${statuses.join("  ")}`);
   }
 
   console.log("");
