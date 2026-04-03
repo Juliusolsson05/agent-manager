@@ -20,6 +20,10 @@ program
   .command("init")
   .description("Initialize agent-commands in this repo or globally")
   .option("-g, --global", "Initialize global config at ~/.agent-commands/")
+  .option("-t, --targets <targets>", "Comma-separated list of targets (claude-code,cursor,codex,opencode)")
+  .option("-a, --all", "Select all available targets")
+  .option("--gitignore", "Add generated dirs to .git/info/exclude")
+  .option("--no-gitignore", "Skip gitignoring generated dirs")
   .action(initCommand);
 
 program

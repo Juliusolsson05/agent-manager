@@ -2,6 +2,7 @@ import { join } from "path";
 import { existsSync, appendFileSync, readFileSync } from "fs";
 import chalk from "chalk";
 import { checkbox, confirm } from "@inquirer/prompts";
+import { ALL_TARGET_IDS } from "../adapters/index.js";
 import { saveConfig } from "../lib/config.js";
 import { ensureDir } from "../lib/fs-utils.js";
 import {
@@ -11,7 +12,14 @@ import {
   PROJECT_COMMANDS_DIR,
 } from "../lib/paths.js";
 
-export async function initCommand(options: { global?: boolean }): Promise<void> {
+interface InitOptions {
+  global?: boolean;
+  targets?: string;
+  gitignore?: boolean;
+  all?: boolean;
+}
+
+export async function initCommand(options: InitOptions): Promise<void> {
   const scope = options.global ? "global" : "project";
   const cwd = process.cwd();
 
@@ -25,15 +33,29 @@ export async function initCommand(options: { global?: boolean }): Promise<void> 
     return;
   }
 
-  const targets = await checkbox({
-    message: "What platforms do you want to sync?",
-    choices: [
-      { name: "Claude Code", value: "claude-code" },
-      { name: "Cursor", value: "cursor" },
-      { name: "Codex", value: "codex" },
-      { name: "OpenCode", value: "opencode" },
-    ],
-  });
+  let targets: string[];
+
+  if (options.all) {
+    targets = ALL_TARGET_IDS;
+  } else if (options.targets) {
+    targets = options.targets.split(",").map(t => t.trim());
+    const invalid = targets.filter(t => !ALL_TARGET_IDS.includes(t));
+    if (invalid.length > 0) {
+      console.log(chalk.red(`Unknown targets: ${invalid.join(", ")}`));
+      console.log(chalk.dim(`Available: ${ALL_TARGET_IDS.join(", ")}`));
+      return;
+    }
+  } else {
+    targets = await checkbox({
+      message: "What platforms do you want to sync?",
+      choices: [
+        { name: "Claude Code", value: "claude-code" },
+        { name: "Cursor", value: "cursor" },
+        { name: "Codex", value: "codex" },
+        { name: "OpenCode", value: "opencode" },
+      ],
+    });
+  }
 
   if (targets.length === 0) {
     console.log(chalk.red("No targets selected. Aborting."));
@@ -54,10 +76,12 @@ export async function initCommand(options: { global?: boolean }): Promise<void> 
     console.log(chalk.green(`✓ Created ${PROJECT_COMMANDS_DIR}/`));
 
     if (existsSync(join(cwd, ".git"))) {
-      const shouldGitignore = await confirm({
-        message: "Gitignore the generated platform command directories?",
-        default: true,
-      });
+      const shouldGitignore = options.gitignore !== undefined
+        ? options.gitignore
+        : await confirm({
+            message: "Gitignore the generated platform command directories?",
+            default: true,
+          });
 
       if (shouldGitignore) {
         const excludePath = join(cwd, ".git", "info", "exclude");
