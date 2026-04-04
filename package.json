@@ -1,6 +1,6 @@
 {
   "name": "agent-mgr",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Write commands once, sync everywhere. Universal CLI for managing AI agent commands, prompts, and MCP configs.",
   "type": "module",
   "bin": {
