@@ -18,7 +18,7 @@ program
   .description(
     "Write commands once, sync everywhere. Manage AI agent commands, prompts, and MCP configs."
   )
-  .version("0.2.0");
+  .version("0.2.1");
 
 program
   .command("init")
