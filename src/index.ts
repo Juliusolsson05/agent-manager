@@ -64,6 +64,11 @@ mcp
   .command("add")
   .description("Add an MCP server to configured targets")
   .option("-g, --global", "Add to global MCP config")
+  .option("-n, --name <name>", "MCP server name")
+  .option("-c, --command <command>", "Command to run")
+  .option("-a, --args <args>", "Arguments (space-separated)")
+  .option("-e, --env <env>", "Environment variables (KEY=VAL KEY=VAL)")
+  .option("-t, --targets <targets>", "Comma-separated list of targets")
   .action(mcpAddCommand);
 
 mcp
